@@ -31,6 +31,9 @@
         <button @click="activeAdminTab = 'users'" :class="['px-3 py-2 font-medium text-sm rounded-md', activeAdminTab === 'users' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700']">
           Quản lý Admin
         </button>
+        <button @click="activeAdminTab = 'members'" :class="['px-3 py-2 font-medium text-sm rounded-md', activeAdminTab === 'members' ? 'bg-blue-100 text-blue-700' : 'text-gray-500 hover:text-gray-700']">
+          Quản lý thành viên
+        </button>
       </nav>
       <div v-if="activeAdminTab === 'projects'">
         <div class="bg-white rounded-lg shadow">
@@ -124,6 +127,42 @@
           </div>
         </div>
       </div>
+      <div v-if="activeAdminTab === 'members'">
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-lg font-medium text-gray-900">Quản lý thành viên</h2>
+            <button @click="showMemberModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+              <component :is="$lucide.Plus" class="h-4 w-4 inline mr-2" />
+              Thêm thành viên
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chức vụ</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="member in members" :key="member.id">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ member.name }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ member.position }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button @click="editMember(member)" class="text-indigo-600 hover:text-indigo-900 mr-4">
+                      <component :is="$lucide.Edit" class="h-4 w-4" />
+                    </button>
+                    <button @click="deleteMember(member.id)" class="text-red-600 hover:text-red-900">
+                      <component :is="$lucide.Trash2" class="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       <div v-if="showProjectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
           <div class="flex justify-between items-center mb-6">
@@ -206,9 +245,37 @@
           </form>
         </div>
       </div>
+      <div v-if="showMemberModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">{{ editingMember ? 'Chỉnh sửa thành viên' : 'Thêm thành viên mới' }}</h2>
+            <button @click="closeMemberModal" class="text-gray-400 hover:text-gray-600">
+              <component :is="$lucide.X" class="h-6 w-6" />
+            </button>
+          </div>
+          <form @submit.prevent="saveMember">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tên</label>
+              <input v-model="memberForm.name" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Chức vụ</label>
+              <input v-model="memberForm.position" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+            <div class="flex justify-end space-x-4">
+              <button type="button" @click="closeMemberModal" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                Hủy
+              </button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                {{ editingMember ? 'Cập nhật' : 'Thêm' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-    </div>
-  </template>
+  </div>
+</template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -219,10 +286,13 @@ const router = useRouter()
 const activeAdminTab = ref('projects')
 const showProjectModal = ref(false)
 const showUserModal = ref(false)
+const showMemberModal = ref(false)
 const editingProject = ref(null)
 const editingUser = ref(null)
+const editingMember = ref(null)
 const projects = ref([])
 const users = ref([])
+const members = ref([])
 const currentUser = ref({ name: 'Admin' })
 const projectForm = ref({
   title: '',
@@ -236,6 +306,10 @@ const userForm = ref({
   password: '',
   role: 'admin',
   status: 'active'
+})
+const memberForm = ref({
+  name: '',
+  position: ''
 })
 
 const fetchProjects = async () => {
@@ -257,6 +331,17 @@ const fetchUsers = async () => {
     users.value = response.data
   } catch (error) {
     console.error('Error fetching users:', error)
+  }
+}
+
+const fetchMembers = async () => {
+  try {
+    const response = await axios.get('http://localhost:3000/api/members', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    })
+    members.value = response.data
+  } catch (error) {
+    console.error('Error fetching members:', error)
   }
 }
 
@@ -382,6 +467,56 @@ const closeUserModal = () => {
   userForm.value = { name: '', email: '', password: '', role: 'admin', status: 'active' }
 }
 
+const editMember = (member) => {
+  editingMember.value = member
+  memberForm.value = {
+    name: member.name,
+    position: member.position
+  }
+  showMemberModal.value = true
+}
+
+const saveMember = async () => {
+  try {
+    if (editingMember.value) {
+      await axios.put(`http://localhost:3000/api/members/${editingMember.value.id}`, memberForm.value, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+    } else {
+      await axios.post('http://localhost:3000/api/members', memberForm.value, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+    }
+    fetchMembers()
+    closeMemberModal()
+    alert(editingMember.value ? 'Thành viên đã được cập nhật!' : 'Thành viên mới đã được thêm!')
+  } catch (error) {
+    console.error('Error saving member:', error)
+    alert('Có lỗi xảy ra khi lưu thành viên!')
+  }
+}
+
+const deleteMember = async (id) => {
+  if (confirm('Bạn có chắc chắn muốn xóa thành viên này?')) {
+    try {
+      await axios.delete(`http://localhost:3000/api/members/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+      fetchMembers()
+      alert('Thành viên đã được xóa!')
+    } catch (error) {
+      console.error('Error deleting member:', error)
+      alert('Có lỗi xảy ra khi xóa thành viên!')
+    }
+  }
+}
+
+const closeMemberModal = () => {
+  showMemberModal.value = false
+  editingMember.value = null
+  memberForm.value = { name: '', position: '' }
+}
+
 const logout = () => {
   localStorage.removeItem('token')
   router.push('/admin-login')
@@ -405,6 +540,7 @@ const resetDemoData = async () => {
 onMounted(() => {
   fetchProjects()
   fetchUsers()
+  fetchMembers()
   fetchCurrentUser()
 })
 </script>
