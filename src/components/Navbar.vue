@@ -10,6 +10,7 @@ import { RouterLink } from 'vue-router';
           <div class="flex items-center">
             <div class="flex-shrink-0 flex items-center">
               <Zap class="h-8 w-8 text-blue-600 mr-2" />
+              <img src="@/assets/flash.png" alt="Logo" class="h-8 w-8 mr-2">
               <span class="text-2xl font-bold text-gray-900">FlashTech</span>
             </div>
           </div>
