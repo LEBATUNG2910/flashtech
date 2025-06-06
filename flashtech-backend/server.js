@@ -62,7 +62,7 @@ User.findOne({ email: 'admin@flashtech.vn' }).then(user => {
   if (!user) {
     bcrypt.hash('admin123', 10).then(hashedPassword => {
       User.create({
-        name: 'Nguyễn Văn Admin',
+        name: 'Anh Huy',
         email: 'admin@flashtech.vn',
         password: hashedPassword,
         role: 'super_admin',
