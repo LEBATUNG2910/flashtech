@@ -57,7 +57,7 @@ const authenticateToken = (req, res, next) => {
   }
 }
 
-// Initialize admin user
+// Initialize admin user and clean up old data
 User.findOne({ email: 'admin@flashtech1.vn' }).then(user => {
   if (!user) {
     bcrypt.hash('admin123', 10).then(hashedPassword => {
@@ -71,6 +71,14 @@ User.findOne({ email: 'admin@flashtech1.vn' }).then(user => {
     })
   }
 })
+
+// Clean up old/unwanted users
+User.deleteMany({ 
+  $or: [
+    { name: 'Nguyễn văn admin' },
+    { email: { $regex: /nguyen.*admin/i } }
+  ]
+}).then(() => console.log('Cleaned up old admin users'))
 
 // Initialize default members
 Member.find().then(members => {
@@ -179,8 +187,17 @@ app.post('/api/projects/reset-demo', authenticateToken, async (req, res) => {
 app.get('/api/users', authenticateToken, async (req, res) => {
   try {
     const users = await User.find().select('-password')
-    res.json(users)
+    // Map _id to id for frontend consistency
+    const usersWithId = users.map(user => ({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status
+    }))
+    res.json(usersWithId)
   } catch (error) {
+    console.error('Error fetching users:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })
@@ -188,33 +205,90 @@ app.get('/api/users', authenticateToken, async (req, res) => {
 app.post('/api/users', authenticateToken, async (req, res) => {
   try {
     const { name, email, password, role, status } = req.body
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email })
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists' })
+    }
+    
     const hashedPassword = await bcrypt.hash(password, 10)
     const user = await User.create({ name, email, password: hashedPassword, role, status })
-    res.status(201).json(user)
+    
+    // Return user without password and with proper id mapping
+    const userResponse = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status
+    }
+    
+    res.status(201).json(userResponse)
   } catch (error) {
+    console.error('Error creating user:', error)
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'User with this email already exists' })
+    }
     res.status(500).json({ message: 'Server error' })
   }
 })
 
 app.put('/api/users/:id', authenticateToken, async (req, res) => {
   try {
+    const userId = req.params.id
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' })
+    }
+    
     const { name, email, role, status } = req.body
     const updateData = { name, email, role, status }
-    if (req.body.password) {
+    
+    // Only hash password if it's provided
+    if (req.body.password && req.body.password.trim() !== '') {
       updateData.password = await bcrypt.hash(req.body.password, 10)
     }
-    const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password')
-    res.json(user)
+    
+    const user = await User.findByIdAndUpdate(userId, updateData, { new: true }).select('-password')
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    
+    // Return with proper id mapping
+    const userResponse = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status
+    }
+    
+    res.json(userResponse)
   } catch (error) {
+    console.error('Error updating user:', error)
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already exists' })
+    }
     res.status(500).json({ message: 'Server error' })
   }
 })
 
 app.delete('/api/users/:id', authenticateToken, async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id)
+    const userId = req.params.id
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' })
+    }
+    
+    const result = await User.findByIdAndDelete(userId)
+    if (!result) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    
     res.status(204).send()
   } catch (error) {
+    console.error('Error deleting user:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })
