@@ -58,12 +58,12 @@ const authenticateToken = (req, res, next) => {
 }
 
 // Initialize admin user
-User.findOne({ email: 'admin@flashtech.vn' }).then(user => {
+User.findOne({ email: 'admin@flashtech1.vn' }).then(user => {
   if (!user) {
     bcrypt.hash('admin123', 10).then(hashedPassword => {
       User.create({
-        name: 'Anh Huy',
-        email: 'admin@flashtech.vn',
+        name: 'Tung Lê Bá',
+        email: 'admin@flashtech1.vn',
         password: hashedPassword,
         role: 'super_admin',
         status: 'active'
@@ -82,8 +82,6 @@ Member.find().then(members => {
     ]).then(() => console.log('Default members created'))
   }
 })
-
-
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body
@@ -230,7 +228,6 @@ app.post('/api/contact', async (req, res) => {
   }
 })
 
-// Endpoints for Members
 app.get('/api/members', async (req, res) => {
   try {
     const members = await Member.find().select('_id name position')

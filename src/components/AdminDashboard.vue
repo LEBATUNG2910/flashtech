@@ -519,7 +519,7 @@ const closeMemberModal = () => {
 
 const logout = () => {
   localStorage.removeItem('token')
-  router.push('/admin-login')
+  router.push('/login')
 }
 
 const resetDemoData = async () => {

@@ -10,7 +10,7 @@ import AdminDashboard from './components/AdminDashboard.vue'
 // Define routes
 const routes = [
   { path: '/', component: Home },
-  { path: '/admin-login', component: AdminLogin },
+  { path: '/login', component: AdminLogin },
   { path: '/admin', component: AdminDashboard, meta: { requiresAuth: true } }
 ]
 
@@ -29,7 +29,7 @@ const router = createRouter({
 // Auth guard
 router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !localStorage.getItem('token')) {
-    next('/admin-login')
+    next('/login')
   } else {
     next()
   }

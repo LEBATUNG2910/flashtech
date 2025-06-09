@@ -21,7 +21,7 @@ import { RouterLink } from 'vue-router';
             <a href="#about" class="text-gray-700 hover:text-blue-600 transition-colors">Về chúng tôi</a>
             <a href="#contact" class="text-gray-700 hover:text-blue-600 transition-colors">Liên hệ</a>
             <router-link
-  to="/admin-login"
+  to="/login"
   class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
 >
   Admin
