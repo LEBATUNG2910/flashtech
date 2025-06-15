@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build" # Điều chỉnh theo lệnh build frontend của bạn
-  publish = "dist" # Điều chỉnh theo thư mục đầu ra build frontend
+  command = "npm run build"
+  publish = "dist"
   functions = "functions"
 
 [[redirects]]
