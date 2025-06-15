@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build" # Điều chỉnh theo lệnh build frontend của bạn
+  publish = "dist" # Điều chỉnh theo thư mục đầu ra build frontend
+  functions = "functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
